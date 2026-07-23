@@ -30,12 +30,5 @@ jobs:
           export SP="$TD/implementation/TeamTalk_DLL"
           export LD_LIBRARY_PATH="$SP"
           export SDK_PATH="$SP"
-          python3 -c "
-import os, ctypes
-os.environ['LD_LIBRARY_PATH'] = os.environ.get('SDK_PATH','')
-ctypes.cdll.LoadLibrary(os.environ['SDK_PATH'] + '/libTeamTalk5.so')
-from teamtalk import TeamTalkBot
-from teamtalk.enums import TeamTalkServerInfo
-print('OK - IMPORT FUNCIONOU!')
-          "
+          python3 -c "import os, ctypes; os.environ['LD_LIBRARY_PATH']=os.environ.get('SDK_PATH',''); ctypes.cdll.LoadLibrary(os.environ.get('SDK_PATH','')+'/libTeamTalk5.so'); from teamtalk import TeamTalkBot; from teamtalk.enums import TeamTalkServerInfo; print('OK!')"
           python3 samara_bot.py
