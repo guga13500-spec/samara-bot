@@ -1,47 +1,7 @@
-name: Jarvis Bot
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+name: Jarvis
+on: [push]
 jobs:
-  run-jarvis:
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Setup
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq p7zip-full
-          pip install -q requests teamtalk.py
-          TT_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])")/teamtalk
-          curl -s -o /tmp/ttsdk.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
-          7z x -y /tmp/ttsdk.7z -o/tmp/sdk > /dev/null
-          FP=$(find /tmp/sdk -type d -name TeamTalkPy | head -1)
-          FD=$(find /tmp/sdk -type d -name TeamTalk_DLL | head -1)
-          rm -rf "$TT_DIR/implementation"
-          mkdir -p "$TT_DIR/implementation"
-          cp -r "$FP" "$TT_DIR/implementation/TeamTalkPy"
-          cp -r "$FD" "$TT_DIR/implementation/TeamTalk_DLL"
-          touch "$TT_DIR/implementation/__init__.py"
-          echo "SDK_PATH=$TT_DIR/implementation/TeamTalk_DLL" >> $GITHUB_ENV
-      - name: Testar import
-        run: |
-          export LD_LIBRARY_PATH="$SDK_PATH"
-          python3 -c "
-import os, ctypes
-os.environ['LD_LIBRARY_PATH'] = '$SDK_PATH'
-ctypes.cdll.LoadLibrary('$SDK_PATH/libTeamTalk5.so')
-from teamtalk import TeamTalkBot
-from teamtalk.enums import TeamTalkServerInfo
-print('OK')
-          "
-      - name: Rodar Jarvis
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          export LD_LIBRARY_PATH="$SDK_PATH"
-          python samara_bot.py
+      - run: echo "hello"
