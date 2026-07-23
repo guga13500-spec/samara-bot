@@ -1,64 +1,52 @@
 #!/usr/bin/env python3
 """
-SAMARA - Assistente IA para TeamTalk 5
-v3 - Testa conexão e grava resultado
+SAMARA - Teste de Conexão com TeamTalk 5
+Sem dependências externas - só Python puro
 """
-import os, sys, time, json, requests, logging, socket
+import os, sys, time, json, logging, socket
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("Samara")
+log = logging.getLogger("SamaraTest")
 
 HOST = "tt5.angelsclan.net"
 PORT = 23351
-USER = "Gustavo"
-PASS = "2007"
-NICK = "Samara"
-CHANNEL = "Grupo dos Amigos"
-API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-MODEL = "openai/gpt-4o-mini"
 
-# TESTE 1: Socket TCP
 log.info("=" * 50)
-log.info(f"Testando conexão TCP com {HOST}:{PORT}...")
+log.info(f"TESTE DE CONEXÃO: {HOST}:{PORT}")
 log.info("=" * 50)
 
+# DNS
+log.info("\n📡 Testando DNS...")
 try:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(10)
-    s.connect((HOST, PORT))
-    log.info(f"✅ CONEXÃO TCP BEM-SUCEDIDA! {HOST}:{PORT}")
-    s.settimeout(3)
-    try:
-        data = s.recv(4096)
-        log.info(f"📡 Dados recebidos: {data[:200]}")
-    except:
-        log.info("📡 Conectado mas sem dados iniciais")
-    s.close()
+    ips = socket.getaddrinfo(HOST, PORT, socket.AF_INET, socket.SOCK_STREAM)
+    ip = ips[0][4][0]
+    log.info(f"   ✅ DNS resolvido: {HOST} -> {ip}")
 except Exception as e:
-    log.error(f"❌ CONEXÃO TCP FALHOU: {e}")
+    log.error(f"   ❌ DNS falhou: {e}")
+    sys.exit(1)
 
-# TESTE 2: OpenRouter
-if API_KEY:
-    log.info("\n--- Testando OpenRouter ---")
+# TCP
+log.info(f"\n🔌 Testando TCP...")
+for i in range(3):
     try:
-        r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-            headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-            json={"model": MODEL, "messages": [{"role": "user", "content": "diga OK"}], "max_tokens": 10}, timeout=15)
-        log.info(f"✅ OpenRouter: {r.json()['choices'][0]['message']['content']}")
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(10)
+        s.connect((ip, PORT))
+        s.settimeout(3)
+        log.info(f"   ✅ CONEXÃO BEM-SUCEDIDA! (tentativa {i+1})")
+        try:
+            data = s.recv(4096)
+            log.info(f"   📨 Dados: {data[:200]}")
+        except socket.timeout:
+            log.info(f"   📨 Conectado, sem dados iniciais")
+        s.close()
+        log.info("\n🎉 SAMARA PODE CONECTAR NESSE SERVIDOR!")
+        sys.exit(0)
+    except ConnectionRefusedError:
+        log.error(f"   ❌ Conexão recusada (tentativa {i+1}/3)")
     except Exception as e:
-        log.error(f"❌ OpenRouter: {e}")
-else:
-    log.warning("⚠️ OPENROUTER_API_KEY não configurada")
+        log.error(f"   ❌ Erro: {e} (tentativa {i+1}/3)")
+    time.sleep(2)
 
-# TESTE 3: DNS
-log.info("\n--- Testando DNS ---")
-try:
-    ip = socket.gethostbyname(HOST)
-    log.info(f"✅ DNS: {HOST} -> {ip}")
-except Exception as e:
-    log.error(f"❌ DNS: {e}")
-
-# Resultado final
-log.info("\n" + "=" * 50)
-log.info("TESTE CONCLUÍDO")
-log.info("=" * 50)
+log.error("\n❌ SAMARA NÃO CONSEGUIU CONECTAR")
+sys.exit(1)
