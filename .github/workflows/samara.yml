@@ -8,28 +8,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Setup
-        run: |
-          set -e
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq p7zip-full
-          pip install -q requests teamtalk.py
-          TT_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])")/teamtalk
-          curl -s -o /tmp/ttsdk.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
-          7z x -y /tmp/ttsdk.7z -o/tmp/sdk > /dev/null 2>&1
-          FP=$(find /tmp/sdk -type d -name TeamTalkPy | head -1)
-          FD=$(find /tmp/sdk -type d -name TeamTalk_DLL | head -1)
-          rm -rf "$TT_DIR/implementation"
-          mkdir -p "$TT_DIR/implementation"
-          cp -r "$FP" "$TT_DIR/implementation/TeamTalkPy"
-          cp -r "$FD" "$TT_DIR/implementation/TeamTalk_DLL"
-          touch "$TT_DIR/implementation/__init__.py"
-          S="$TT_DIR/implementation/TeamTalk_DLL"
-          echo "SDK_PATH=$S" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$S" >> $GITHUB_ENV
-      - name: Teste
-        run: python3 test_import.py
-      - name: Jarvis
+      - name: Rodar
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: python3 samara_bot.py
+        run: bash run_jarvis.sh "$OPENROUTER_API_KEY"
