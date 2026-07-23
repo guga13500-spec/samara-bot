@@ -21,12 +21,43 @@ jobs:
           pip install requests teamtalk.py
       - name: Configurar SDK TeamTalk
         run: |
-          python setup_jarvis.py
+          # Encontrar diretório do teamtalk
+          TT_DIR=$(pip show teamtalk.py 2>/dev/null | grep Location | awk '{print $2}')
+          TT_DIR="$TT_DIR/teamtalk"
+          echo "📁 TeamTalk em: $TT_DIR"
+          
+          # Baixar SDK
+          echo "📥 Baixando SDK..."
+          curl -s -o /tmp/ttsdk.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
+          ls -la /tmp/ttsdk.7z
+          
+          # Extrair
+          echo "📦 Extraindo..."
+          7z x -y /tmp/ttsdk.7z -o/tmp/ttsdk_extracted > /dev/null
+          
+          # Encontrar TeamTalkPy e TeamTalk_DLL
+          FOUND_PY=$(find /tmp/ttsdk_extracted -type d -name "TeamTalkPy" | head -1)
+          FOUND_DLL=$(find /tmp/ttsdk_extracted -type d -name "TeamTalk_DLL" | head -1)
+          echo "✅ TeamTalkPy: $FOUND_PY"
+          echo "✅ TeamTalk_DLL: $FOUND_DLL"
+          
+          # Copiar
+          rm -rf "$TT_DIR/implementation"
+          mkdir -p "$TT_DIR/implementation"
+          cp -r "$FOUND_PY" "$TT_DIR/implementation/TeamTalkPy"
+          cp -r "$FOUND_DLL" "$TT_DIR/implementation/TeamTalk_DLL"
+          touch "$TT_DIR/implementation/__init__.py"
+          rm -rf "$TT_DIR/implementation/TeamTalkPy/test"
+          
+          # Verificar
+          echo "✅ Verificando..."
+          ls -la "$TT_DIR/implementation/TeamTalk_DLL/"
+          echo "🎉 SDK instalado!"
+      - name: Testar import
+        run: |
+          python3 -c "from teamtalk import TeamTalkBot; print('✅ Import OK!')"
       - name: Rodar Jarvis (24h)
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          while true; do
-            python samara_bot.py
-            sleep 10
-          done
+          python samara_bot.py
