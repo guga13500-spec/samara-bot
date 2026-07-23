@@ -1,11 +1,9 @@
-name: Samara Bot - 24h
+name: Samara Bot - 24/7
 
 on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
   run-samara:
@@ -18,8 +16,8 @@ jobs:
           python-version: "3.11"
       - name: Instalar dependências
         run: |
-          pip install requests
-      - name: Rodar Samara
+          pip install requests teamtalk.py
+      - name: Rodar Samara (24h)
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
