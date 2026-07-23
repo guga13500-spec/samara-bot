@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-SAMARA - Assistente IA para TeamTalk 5
-Criada por Zapia para Guga
-Personalidade: zoeira, direta, brasileira, sem frescura
+SAMARA v3 - Assistente IA para TeamTalk 5
+Conecta via teamtalk.py, usa OpenRouter pra responder
+Personalidade: zoeira, direta, brasileira
 """
 
-import os, sys, time, json, requests, logging
+import os, sys, time, json, requests, logging, asyncio
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("Samara")
 
-# ─── CONFIGURAÇÃO ───────────────────────────────────────────────
 HOST = "tt5.angelsclan.net"
 PORT = 23351
 USER = "Gustavo"
@@ -20,11 +19,10 @@ CHANNEL = "Grupo dos Amigos"
 API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = "openai/gpt-4o-mini"
 
-# ─── IA (OpenRouter) ────────────────────────────────────────────
 class Cerebro:
     def __init__(self, key):
         self.key = key
-        self.hist = [{"role": "system", "content": "Você é a Samara, uma IA zoeira e engraçada que vive no TeamTalk. Responda curto, direto, com gírias brasileiras, sem moralismo e sem frescura. Seja autêntica."}]
+        self.hist = [{"role": "system", "content": "Você é a Samara, uma IA zoeira e engraçada do TeamTalk. Responda curto, direto, com gírias brasileiras, sem moralismo e sem frescura. Seja autêntica."}]
 
     def perguntar(self, texto, nome):
         self.hist.append({"role": "user", "content": f"{nome}: {texto}"})
@@ -39,48 +37,39 @@ class Cerebro:
             log.error(f"Erro IA: {e}")
             return "Ih, deu branco aqui! Tenta de novo."
 
-# ─── TEAMTALK ───────────────────────────────────────────────────
-def conectar():
+def main():
     import teamtalk
     bot = teamtalk.Bot()
-    
+    cereb = Cerebro(API_KEY) if API_KEY else None
+
     @bot.event
     async def on_ready():
-        log.info(f"✅ Samara online em {HOST}:{PORT}")
-        # Entrar no canal
+        log.info("✅ Samara online!")
         await bot.join_channel(CHANNEL)
         log.info(f"✅ Entrou no canal: {CHANNEL}")
-    
+        if cereb:
+            await bot.send_message("Salve salve, família! Samara chegou pra alegrar o grupo! 🎉")
+        else:
+            await bot.send_message("Salve! Samara online! (modo offline - sem IA)")
+
     @bot.event
     async def on_message(msg):
         texto = msg.content.strip()
         nome = msg.user.nickname if msg.user else "Alguém"
-        if not texto:
+        if not texto or nome == NICK:
             return
-        
         log.info(f"💬 {nome}: {texto}")
-        
         if cereb:
             resposta = cereb.perguntar(texto, nome)
             await bot.send_message(resposta)
             log.info(f"🤖 Samara: {resposta[:100]}")
-    
-    # Conectar
+
     bot.run(HOST, PORT, username=USER, password=PASS, nickname=NICK)
 
-# ─── MAIN ───────────────────────────────────────────────────────
 if __name__ == "__main__":
-    cereb = Cerebro(API_KEY) if API_KEY else None
-    if cereb:
-        log.info("🧠 Samara com IA (OpenRouter) carregada!")
+    log.info("🧠 Samara iniciando...")
+    if API_KEY:
+        log.info("✅ OpenRouter configurada!")
     else:
-        log.warning("⚠️ Samara sem IA - defina OPENROUTER_API_KEY")
-    
-    while True:
-        try:
-            conectar()
-        except KeyboardInterrupt:
-            sys.exit(0)
-        except Exception as e:
-            log.error(f"❌ Erro: {e}")
-            time.sleep(10)
+        log.warning("⚠️ Sem OPENROUTER_API_KEY - modo offline")
+    main()
