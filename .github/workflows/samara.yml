@@ -12,7 +12,7 @@ jobs:
         run: |
           set -e
           sudo apt-get update -qq
-          sudo apt-get install -y -qq p7zip-full libasound2
+          sudo apt-get install -y -qq p7zip-full
           pip install -q requests teamtalk.py
           TD=$(python3 -c "import site;print(site.getsitepackages()[0])")/teamtalk
           curl -s -o /tmp/s.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
