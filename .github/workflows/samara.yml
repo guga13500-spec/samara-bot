@@ -1,14 +1,17 @@
 name: Jarvis
-on: [push]
+on: [push, workflow_dispatch]
 jobs:
-  test:
+  jarvis:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Setup
+      - name: Setup e Jarvis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           set -e
           sudo apt-get update -qq
@@ -24,16 +27,15 @@ jobs:
           cp -r "$PY" "$TD/implementation/TeamTalkPy"
           cp -r "$DL" "$TD/implementation/TeamTalk_DLL"
           touch "$TD/implementation/__init__.py"
-          echo "SP=$TD/implementation/TeamTalk_DLL" >> $GITHUB_ENV
-      - name: Teste
-        run: |
+          export SP="$TD/implementation/TeamTalk_DLL"
           export LD_LIBRARY_PATH="$SP"
           export SDK_PATH="$SP"
-          python3 -c "import os, ctypes; os.environ['LD_LIBRARY_PATH']=os.environ.get('SDK_PATH',''); ctypes.cdll.LoadLibrary(os.environ.get('SDK_PATH','')+'/libTeamTalk5.so'); from teamtalk import TeamTalkBot; from teamtalk.enums import TeamTalkServerInfo; print('OK!')"
-      - name: Jarvis
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          export LD_LIBRARY_PATH="$SP"
-          export SDK_PATH="$SP"
+          python3 -c "
+import os, ctypes
+os.environ['LD_LIBRARY_PATH'] = os.environ.get('SDK_PATH','')
+ctypes.cdll.LoadLibrary(os.environ['SDK_PATH'] + '/libTeamTalk5.so')
+from teamtalk import TeamTalkBot
+from teamtalk.enums import TeamTalkServerInfo
+print('OK - IMPORT FUNCIONOU!')
+          "
           python3 samara_bot.py
