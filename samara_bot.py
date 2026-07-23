@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SAMARA v3 - Assistente IA para TeamTalk 5
+JARVIS v1 - Assistente IA para TeamTalk 5
 Conecta via teamtalk.py, usa OpenRouter pra responder
 Personalidade: zoeira, direta, brasileira
 """
@@ -8,13 +8,13 @@ Personalidade: zoeira, direta, brasileira
 import os, sys, time, json, requests, logging, asyncio
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("Samara")
+log = logging.getLogger("Jarvis")
 
 HOST = "tt5.angelsclan.net"
 PORT = 23351
 USER = "Gustavo"
 PASS = "2007"
-NICK = "Samara"
+NICK = "Jarvis"
 CHANNEL = "Grupo dos Amigos"
 API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = "openai/gpt-4o-mini"
@@ -22,7 +22,7 @@ MODEL = "openai/gpt-4o-mini"
 class Cerebro:
     def __init__(self, key):
         self.key = key
-        self.hist = [{"role": "system", "content": "Você é a Samara, uma IA zoeira e engraçada do TeamTalk. Responda curto, direto, com gírias brasileiras, sem moralismo e sem frescura. Seja autêntica."}]
+        self.hist = [{"role": "system", "content": "Você é o Jarvis, uma IA zoeira e brincalhona do TeamTalk. Responda curto, direto, com gírias brasileiras, sem moralismo e sem frescura. Seja autêntico e engraçado."}]
 
     def perguntar(self, texto, nome):
         self.hist.append({"role": "user", "content": f"{nome}: {texto}"})
@@ -44,13 +44,13 @@ def main():
 
     @bot.event
     async def on_ready():
-        log.info("✅ Samara online!")
+        log.info("✅ Jarvis online!")
         await bot.join_channel(CHANNEL)
         log.info(f"✅ Entrou no canal: {CHANNEL}")
         if cereb:
-            await bot.send_message("Salve salve, família! Samara chegou pra alegrar o grupo! 🎉")
+            await bot.send_message("Fala galera! Jarvis na área, prepara que o bagulho vai ficar bom! 🤖🔥")
         else:
-            await bot.send_message("Salve! Samara online! (modo offline - sem IA)")
+            await bot.send_message("Jarvis online! (modo offline - sem IA) 🤖")
 
     @bot.event
     async def on_message(msg):
@@ -62,12 +62,12 @@ def main():
         if cereb:
             resposta = cereb.perguntar(texto, nome)
             await bot.send_message(resposta)
-            log.info(f"🤖 Samara: {resposta[:100]}")
+            log.info(f"🤖 Jarvis: {resposta[:100]}")
 
     bot.run(HOST, PORT, username=USER, password=PASS, nickname=NICK)
 
 if __name__ == "__main__":
-    log.info("🧠 Samara iniciando...")
+    log.info("🧠 Jarvis iniciando...")
     if API_KEY:
         log.info("✅ OpenRouter configurada!")
     else:
