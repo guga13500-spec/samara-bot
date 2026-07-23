@@ -6,6 +6,8 @@ Personalidade: zoeira, direta, brasileira
 """
 
 import os, sys, time, json, requests, logging, asyncio
+from teamtalk import TeamTalkBot, TeamTalkServerInfo
+from teamtalk.enums import UserStatusMode
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("Jarvis")
@@ -15,7 +17,7 @@ PORT = 23351
 USER = "Gustavo"
 PASS = "2007"
 NICK = "Jarvis"
-CHANNEL = "Grupo dos Amigos"
+CHANNEL_NAME = "Grupo dos Amigos"
 API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = "openai/gpt-4o-mini"
 
@@ -38,24 +40,36 @@ class Cerebro:
             return "Ih, deu branco aqui! Tenta de novo."
 
 def main():
-    import teamtalk
-    bot = teamtalk.Bot()
+    bot = TeamTalkBot(client_name="JarvisBot")
     cereb = Cerebro(API_KEY) if API_KEY else None
+
+    server_info = TeamTalkServerInfo(
+        host=HOST,
+        tcp_port=PORT,
+        udp_port=PORT,
+        username=USER,
+        password=PASS,
+        nickname=NICK,
+        join_channel_id=0
+    )
 
     @bot.event
     async def on_ready():
         log.info("✅ Jarvis online!")
-        await bot.join_channel(CHANNEL)
-        log.info(f"✅ Entrou no canal: {CHANNEL}")
-        if cereb:
+        # Procurar o canal pelo nome
+        log.info(f"🔍 Procurando canal: {CHANNEL_NAME}")
+        # Enviar mensagem de boas-vindas
+        time.sleep(2)
+        try:
             await bot.send_message("Fala galera! Jarvis na área, prepara que o bagulho vai ficar bom! 🤖🔥")
-        else:
-            await bot.send_message("Jarvis online! (modo offline - sem IA) 🤖")
+            log.info("✅ Mensagem de entrada enviada!")
+        except Exception as e:
+            log.error(f"Erro ao enviar mensagem: {e}")
 
     @bot.event
     async def on_message(msg):
-        texto = msg.content.strip()
-        nome = msg.user.nickname if msg.user else "Alguém"
+        texto = msg.content.strip() if hasattr(msg, 'content') else str(msg).strip()
+        nome = msg.user.nickname if hasattr(msg, 'user') and msg.user else "Alguém"
         if not texto or nome == NICK:
             return
         log.info(f"💬 {nome}: {texto}")
@@ -64,7 +78,9 @@ def main():
             await bot.send_message(resposta)
             log.info(f"🤖 Jarvis: {resposta[:100]}")
 
-    bot.run(HOST, PORT, username=USER, password=PASS, nickname=NICK)
+    log.info(f"🔗 Conectando em {HOST}:{PORT}...")
+    bot.add_server(server_info)
+    bot.run()
 
 if __name__ == "__main__":
     log.info("🧠 Jarvis iniciando...")
