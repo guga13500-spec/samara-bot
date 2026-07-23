@@ -1,4 +1,4 @@
-name: Samara Bot - 24/7
+name: Jarvis Bot - 24/7
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-samara:
+  run-jarvis:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -17,7 +17,7 @@ jobs:
       - name: Instalar dependências
         run: |
           pip install requests teamtalk.py
-      - name: Rodar Samara (24h)
+      - name: Rodar Jarvis (24h)
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
