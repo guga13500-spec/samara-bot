@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-SAMARA - Assistente para TeamTalk 5
-Personalidade: zoeira, direta, brasileira
+SAMARA - Assistente IA para TeamTalk 5
+Criada por Zapia para Guga
+Personalidade: zoeira, direta, brasileira, sem frescura
 """
 
-import os, sys, time, json, requests, logging, socket
+import os, sys, time, json, requests, logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("Samara")
 
-# Config
+# ─── CONFIGURAÇÃO ───────────────────────────────────────────────
 HOST = "tt5.angelsclan.net"
 PORT = 23351
 USER = "Gustavo"
@@ -19,56 +20,67 @@ CHANNEL = "Grupo dos Amigos"
 API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = "openai/gpt-4o-mini"
 
-class AI:
+# ─── IA (OpenRouter) ────────────────────────────────────────────
+class Cerebro:
     def __init__(self, key):
         self.key = key
-        self.history = [{"role": "system", "content": "Você é a Samara, uma IA zoeira e engraçada que vive no TeamTalk. Responda curto, direto, com gírias brasileiras e zero frescura."}]
-    
+        self.hist = [{"role": "system", "content": "Você é a Samara, uma IA zoeira e engraçada que vive no TeamTalk. Responda curto, direto, com gírias brasileiras, sem moralismo e sem frescura. Seja autêntica."}]
+
     def perguntar(self, texto, nome):
-        self.history.append({"role": "user", "content": f"{nome}: {texto}"})
+        self.hist.append({"role": "user", "content": f"{nome}: {texto}"})
         try:
             r = requests.post("https://openrouter.ai/api/v1/chat/completions",
                 headers={"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"},
-                json={"model": MODEL, "messages": self.history[-10:], "max_tokens": 200}, timeout=30)
+                json={"model": MODEL, "messages": self.hist[-10:], "max_tokens": 200}, timeout=30)
             resp = r.json()["choices"][0]["message"]["content"]
-            self.history.append({"role": "assistant", "content": resp})
+            self.hist.append({"role": "assistant", "content": resp})
             return resp
-        except:
-            return "Ih, deu ruim aqui! Tenta de novo."
-
-def connect_tt():
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(10)
-            s.connect((HOST, PORT))
-            log.info(f"Conectado a {HOST}:{PORT}")
-            s.sendall(f"login\nusername={USER}\npassword={PASS}\nnickname={NICK}\n\n".encode())
-            time.sleep(1)
-            s.sendall(f"joinsub\nchannel={CHANNEL}\n\n".encode())
-            log.info(f"Entrou no canal: {CHANNEL}")
-            s.settimeout(60)
-            while True:
-                try:
-                    data = s.recv(4096).decode(errors='ignore')
-                    if not data: break
-                    log.info(f"Recebido: {data[:200]}")
-                except socket.timeout:
-                    s.sendall(b"ping\n\n")
-                    time.sleep(30)
         except Exception as e:
-            log.error(f"Erro: {e}")
-            time.sleep(10)
+            log.error(f"Erro IA: {e}")
+            return "Ih, deu branco aqui! Tenta de novo."
 
+# ─── TEAMTALK ───────────────────────────────────────────────────
+def conectar():
+    import teamtalk
+    bot = teamtalk.Bot()
+    
+    @bot.event
+    async def on_ready():
+        log.info(f"✅ Samara online em {HOST}:{PORT}")
+        # Entrar no canal
+        await bot.join_channel(CHANNEL)
+        log.info(f"✅ Entrou no canal: {CHANNEL}")
+    
+    @bot.event
+    async def on_message(msg):
+        texto = msg.content.strip()
+        nome = msg.user.nickname if msg.user else "Alguém"
+        if not texto:
+            return
+        
+        log.info(f"💬 {nome}: {texto}")
+        
+        if cereb:
+            resposta = cereb.perguntar(texto, nome)
+            await bot.send_message(resposta)
+            log.info(f"🤖 Samara: {resposta[:100]}")
+    
+    # Conectar
+    bot.run(HOST, PORT, username=USER, password=PASS, nickname=NICK)
+
+# ─── MAIN ───────────────────────────────────────────────────────
 if __name__ == "__main__":
-    if API_KEY:
-        ai = AI(API_KEY)
-        log.info("Samara com IA carregada!")
+    cereb = Cerebro(API_KEY) if API_KEY else None
+    if cereb:
+        log.info("🧠 Samara com IA (OpenRouter) carregada!")
     else:
-        log.warning("Samara sem IA - respostas genéricas")
+        log.warning("⚠️ Samara sem IA - defina OPENROUTER_API_KEY")
+    
     while True:
         try:
-            connect_tt()
+            conectar()
         except KeyboardInterrupt:
-            break
-        time.sleep(5)
+            sys.exit(0)
+        except Exception as e:
+            log.error(f"❌ Erro: {e}")
+            time.sleep(10)
