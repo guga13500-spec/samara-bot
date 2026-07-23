@@ -26,4 +26,5 @@ jobs:
           touch "$TT_DIR/implementation/__init__.py"
           SDK_PATH="$TT_DIR/implementation/TeamTalk_DLL"
           export LD_LIBRARY_PATH="$SDK_PATH"
+          export SDK_PATH="$SDK_PATH"
           python3 test_import.py
