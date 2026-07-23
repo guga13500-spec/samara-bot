@@ -16,37 +16,55 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Setup SDK
+      - name: Setup e rodar Jarvis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
+          set -e
+          echo "=== ETAPA 1: Instalar dependencias ==="
           sudo apt-get update -qq
           sudo apt-get install -y -qq p7zip-full
           pip install -q requests teamtalk.py
-          TT_DIR=$(find / -type d -name teamtalk -path "*/site-packages/*" 2>/dev/null | head -1)
-          echo "TT_DIR=$TT_DIR" >> $GITHUB_ENV
+
+          echo "=== ETAPA 2: Localizar teamtalk ==="
+          TT_DIR=$(python3 -c "import site; sp=site.getsitepackages(); print([p for p in sp if 'site-packages' in p][0])")
+          TT_DIR="$TT_DIR/teamtalk"
+          echo "TT_DIR=$TT_DIR"
+
+          echo "=== ETAPA 3: Baixar SDK ==="
           curl -s -o /tmp/ttsdk.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
+          ls -la /tmp/ttsdk.7z
+
+          echo "=== ETAPA 4: Extrair SDK ==="
           7z x -y /tmp/ttsdk.7z -o/tmp/sdk > /dev/null 2>&1
+          echo "Extracao OK"
+
+          echo "=== ETAPA 5: Copiar SDK ==="
           FP=$(find /tmp/sdk -type d -name TeamTalkPy | head -1)
           FD=$(find /tmp/sdk -type d -name TeamTalk_DLL | head -1)
+          echo "Found: $FP"
+          echo "Found: $FD"
           rm -rf "$TT_DIR/implementation"
           mkdir -p "$TT_DIR/implementation"
           cp -r "$FP" "$TT_DIR/implementation/TeamTalkPy"
           cp -r "$FD" "$TT_DIR/implementation/TeamTalk_DLL"
           touch "$TT_DIR/implementation/__init__.py"
-          echo "LD_PATH=$TT_DIR/implementation/TeamTalk_DLL" >> $GITHUB_ENV
-      - name: Testar
-        run: |
-          export LD_LIBRARY_PATH="$LD_PATH"
+
+          echo "=== ETAPA 6: Testar import ==="
+          export LD_LIBRARY_PATH="$TT_DIR/implementation/TeamTalk_DLL"
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           python3 -c "
-import os, ctypes
-os.environ['LD_LIBRARY_PATH'] = '$LD_PATH'
-ctypes.cdll.LoadLibrary('$LD_PATH/libTeamTalk5.so')
+import os, ctypes, sys
+os.environ['LD_LIBRARY_PATH'] = '$TT_DIR/implementation/TeamTalk_DLL'
+lib = '$TT_DIR/implementation/TeamTalk_DLL/libTeamTalk5.so'
+print('Carregando:', lib)
+print('Existe:', os.path.exists(lib))
+ctypes.cdll.LoadLibrary(lib)
 from teamtalk import TeamTalkBot
 from teamtalk.enums import TeamTalkServerInfo
 print('OK - import funcionou!')
           "
-      - name: Rodar Jarvis
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          export LD_LIBRARY_PATH="$LD_PATH"
+
+          echo "=== ETAPA 7: Rodar Jarvis ==="
+          export LD_LIBRARY_PATH="$TT_DIR/implementation/TeamTalk_DLL"
           python samara_bot.py
