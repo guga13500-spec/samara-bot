@@ -24,14 +24,12 @@ jobs:
           cp -r "$FP" "$TT_DIR/implementation/TeamTalkPy"
           cp -r "$FD" "$TT_DIR/implementation/TeamTalk_DLL"
           touch "$TT_DIR/implementation/__init__.py"
-          SDK_PATH="$TT_DIR/implementation/TeamTalk_DLL"
-          echo "SDK_PATH=$SDK_PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$SDK_PATH" >> $GITHUB_ENV
+          S="$TT_DIR/implementation/TeamTalk_DLL"
+          echo "SDK_PATH=$S" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$S" >> $GITHUB_ENV
       - name: Teste
-        run: |
-          python3 test_import.py
+        run: python3 test_import.py
       - name: Jarvis
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          python3 samara_bot.py
+        run: python3 samara_bot.py
