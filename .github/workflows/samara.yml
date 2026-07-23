@@ -8,15 +8,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Tudo
+      - name: Setup
         run: |
           set -e
-          echo "=== APT ==="
           sudo apt-get update -qq
           sudo apt-get install -y -qq p7zip-full
-          echo "=== PIP ==="
           pip install -q requests teamtalk.py
-          echo "=== SDK ==="
           TD=$(python3 -c "import site;print(site.getsitepackages()[0])")/teamtalk
           curl -s -o /tmp/s.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
           7z x -y /tmp/s.7z -o/tmp/x > /dev/null 2>&1
@@ -27,7 +24,14 @@ jobs:
           cp -r "$PY" "$TD/implementation/TeamTalkPy"
           cp -r "$DL" "$TD/implementation/TeamTalk_DLL"
           touch "$TD/implementation/__init__.py"
-          export SP="$TD/implementation/TeamTalk_DLL"
-          echo "=== TESTE ==="
+          echo "SP=$TD/implementation/TeamTalk_DLL" >> $GITHUB_ENV
+      - name: Teste
+        run: |
           export LD_LIBRARY_PATH="$SP"
-          python3 -c "import os, ctypes, sys; sp='$SP'; os.environ['LD_LIBRARY_PATH']=sp; lib=sp+'/libTeamTalk5.so'; print('lib exists:', os.path.exists(lib)); ctypes.cdll.LoadLibrary(lib); from teamtalk import TeamTalkBot; from teamtalk.enums import TeamTalkServerInfo; print('OK!')"
+          python3 -c "import os, ctypes; os.environ['LD_LIBRARY_PATH']='$SP'; ctypes.cdll.LoadLibrary('$SP/libTeamTalk5.so'); from teamtalk import TeamTalkBot; from teamtalk.enums import TeamTalkServerInfo; print('OK!')"
+      - name: Jarvis
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          export LD_LIBRARY_PATH="$SP"
+          python3 samara_bot.py
