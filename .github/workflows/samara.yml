@@ -12,7 +12,7 @@ jobs:
       - name: Setup
         run: |-
           sudo apt-get update -qq
-          sudo apt-get install -y -qq p7zip-full libasound2
+          sudo apt-get install -y -qq p7zip-full
           pip install -q requests teamtalk.py
           TD=$(python3 -c "import site;print(site.getsitepackages()[0])")/teamtalk
           curl -s -o /tmp/s.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
@@ -27,15 +27,13 @@ jobs:
           echo $TD/implementation/TeamTalk_DLL > /tmp/sp.txt
       - name: Teste
         run: |-
-          SP=$(cat /tmp/sp.txt)
-          echo "SP=$SP"
-          ls -la $SP/
+          export SP=$(cat /tmp/sp.txt)
           export LD_LIBRARY_PATH=$SP
           python3 -c "import os,ctypes;os.environ['LD_LIBRARY_PATH']='$SP';ctypes.cdll.LoadLibrary('$SP/libTeamTalk5.so');from teamtalk import TeamTalkBot;from teamtalk.enums import TeamTalkServerInfo;print('OK!')"
       - name: Jarvis
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |-
-          SP=$(cat /tmp/sp.txt)
+          export SP=$(cat /tmp/sp.txt)
           export LD_LIBRARY_PATH=$SP
           python3 samara_bot.py
