@@ -1,5 +1,5 @@
 name: Jarvis
-on: [push]
+on: [workflow_dispatch]
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -8,12 +8,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Setup
+      - name: Setup e Teste
         run: |
+          set -e
           sudo apt-get update -qq
           sudo apt-get install -y -qq p7zip-full
           pip install -q requests teamtalk.py
           TT_DIR=$(python3 -c "import site; print(site.getsitepackages()[0])")/teamtalk
+          echo "TT_DIR=$TT_DIR"
           curl -s -o /tmp/ttsdk.7z "https://www.bearware.dk/teamtalksdk/v5.22a/tt5sdk_v5.22a_ubuntu22_x86_64.7z"
           7z x -y /tmp/ttsdk.7z -o/tmp/sdk > /dev/null
           FP=$(find /tmp/sdk -type d -name TeamTalkPy | head -1)
@@ -23,15 +25,20 @@ jobs:
           cp -r "$FP" "$TT_DIR/implementation/TeamTalkPy"
           cp -r "$FD" "$TT_DIR/implementation/TeamTalk_DLL"
           touch "$TT_DIR/implementation/__init__.py"
-          echo "SDK_PATH=$TT_DIR/implementation/TeamTalk_DLL" >> $GITHUB_ENV
-      - name: Test
-        run: |
-          echo "SDK_PATH=$SDK_PATH"
+          SDK_PATH="$TT_DIR/implementation/TeamTalk_DLL"
           export LD_LIBRARY_PATH="$SDK_PATH"
-          python3 -c "import os, ctypes; os.environ['LD_LIBRARY_PATH'] = '$SDK_PATH'; ctypes.cdll.LoadLibrary('$SDK_PATH/libTeamTalk5.so'); from teamtalk import TeamTalkBot; from teamtalk.enums import TeamTalkServerInfo; print('OK!')"
-      - name: Jarvis
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          export LD_LIBRARY_PATH="$SDK_PATH"
-          python3 samara_bot.py
+          python3 -c "
+import os, ctypes, sys
+os.environ['LD_LIBRARY_PATH'] = '$SDK_PATH'
+lib = '$SDK_PATH/libTeamTalk5.so'
+print('lib exists:', os.path.exists(lib))
+if not os.path.exists(lib):
+    for r, d, f in os.walk('$TT_DIR/implementation'):
+        for fn in f:
+            print('  ', r, fn)
+    sys.exit(1)
+ctypes.cdll.LoadLibrary(lib)
+from teamtalk import TeamTalkBot
+from teamtalk.enums import TeamTalkServerInfo
+print('OK!')
+          "
